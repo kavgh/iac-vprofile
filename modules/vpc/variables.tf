@@ -7,7 +7,7 @@ variable "tags" {
 variable "cidr_block" {
   description = "CIDR block for VPC"
   type = string
-  default = "10.13.2.0/16"
+  default = "10.13.0.0/16"
 }
 
 variable "nos" {

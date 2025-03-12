@@ -9,6 +9,10 @@ resource "aws_vpc" "this" {
   tags = merge(local.tags, { Resource = "vpc" })
 }
 
+#####################
+### Public subnet ###
+#####################
+
 resource "aws_subnet" "public" {
     count = var.nos
 
@@ -19,6 +23,39 @@ resource "aws_subnet" "public" {
     tags = merge(local.tags, { Resource = "pub_sub" })
 }
 
+resource "aws_route_table" "public" {
+  count = length(aws_subnet.public)
+
+  vpc_id = aws_vpc.this.id
+
+    tags = merge(local.tags, { Resource = "pub_rtb" })
+}
+
+resource "aws_route_table_association" "public" {
+    count = length(aws_subnet.public)
+  
+  subnet_id = element(aws_subnet.public[*].id, count.index)
+  route_table_id = element(aws_route_table.public[*].id, count.index)
+}
+
+resource "aws_internet_gateway" "this" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(local.tags, { Resource = "igw" })
+}
+
+resource "aws_route" "this" {
+  count = length(aws_route_table.public)
+
+  route_table_id = aws_route_table.public[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.this.id
+}
+
+######################
+### Private Subnet ###
+######################
+
 resource "aws_subnet" "private" {
     count = var.nos
 
@@ -28,3 +65,17 @@ resource "aws_subnet" "private" {
   tags = merge(local.tags, { Resource = "priv_sub" })
 }
 
+resource "aws_route_table" "private" {
+  count = length(aws_subnet.private)
+
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(local.tags, { Resource = "priv_rtb"})
+}
+
+resource "aws_route_table_association" "private" {
+  count = length(aws_subnet.private)
+
+  subnet_id = element(aws_subnet.private[*].id, count.index)
+  route_table_id = element(aws_route_table.private[*].id, count.index)
+}
