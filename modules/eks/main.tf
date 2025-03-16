@@ -15,7 +15,7 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     subnet_ids                = var.subnet_ids
-    cluster_security_group_id = aws_security_group.this.id
+    security_group_ids = [aws_security_group.this.id]
     endpoint_private_access   = true
     endpoint_public_access    = true
   }
@@ -37,10 +37,18 @@ resource "aws_security_group" "this" {
 resource "aws_vpc_security_group_ingress_rule" "this" {
   security_group_id = aws_security_group.this.id
 
-  description = "Node group to cluster API"
+  description = "Node ingress security rule for cluster API"
   ip_protocol = "tcp"
   from_port   = 443
   to_port     = 443
+  cidr_ipv4   = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "this" {
+  security_group_id = aws_security_group.this.id
+
+  description = "Node egress security rule for outbound traffic"
+  ip_protocol = -1
   cidr_ipv4   = "0.0.0.0/0"
 }
 
@@ -50,14 +58,14 @@ resource "aws_vpc_security_group_ingress_rule" "this" {
 resource "aws_iam_role" "cluster" {
   name               = "${local.tags["Name"]}-eks-cluster-role"
   assume_role_policy = data.aws_iam_policy_document.cluster.json
-  path               = "/GitOps/EKS/Cluster"
+  path               = "/GitOps/EKS/Cluster/"
 
   tags = merge(local.tags, { Resource = "eks_cluster_iam_role" })
 }
 
 data "aws_iam_policy_document" "cluster" {
   statement {
-    actions = ["sts:AsssumeRole"]
+    actions = ["sts:AssumeRole"]
 
     principals {
       type        = "Service"
@@ -115,7 +123,7 @@ data "aws_iam_policy_document" "node" {
 resource "aws_iam_role" "node" {
   name               = "${local.tags["Name"]}-eks-node-role"
   assume_role_policy = data.aws_iam_policy_document.node.json
-  path               = "/GitOps/EKS/Node"
+  path               = "/GitOps/EKS/Node/"
 
   tags = merge(local.tags, { Resource = "eks_node_iam_role" })
 }
