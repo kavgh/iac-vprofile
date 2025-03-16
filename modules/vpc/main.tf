@@ -9,6 +9,8 @@ resource "aws_vpc" "this" {
   tags = merge(local.tags, { Resource = "vpc" })
 }
 
+data "aws_availability_zones" "this" {}
+
 #####################
 ### Public subnet ###
 #####################
@@ -16,9 +18,9 @@ resource "aws_vpc" "this" {
 resource "aws_subnet" "public" {
   count = var.nos
 
-  vpc_id = aws_vpc.this.id
-
-  cidr_block = cidrsubnet(var.cidr_block, var.nos, count.index)
+  vpc_id               = aws_vpc.this.id
+  cidr_block           = cidrsubnet(var.cidr_block, var.nos, count.index)
+  availability_zone_id = data.aws_availability_zones.this.zone_ids[count.index]
 
   tags = merge(local.tags, { Resource = "pub_sub" })
 }
@@ -59,8 +61,9 @@ resource "aws_route" "this" {
 resource "aws_subnet" "private" {
   count = var.nos
 
-  vpc_id     = aws_vpc.this.id
-  cidr_block = cidrsubnet(var.cidr_block, var.nos, var.nos + count.index)
+  vpc_id               = aws_vpc.this.id
+  cidr_block           = cidrsubnet(var.cidr_block, var.nos, var.nos + count.index)
+  availability_zone_id = data.aws_availability_zones.this.zone_ids[count.index]
 
   tags = merge(local.tags, { Resource = "priv_sub" })
 }
