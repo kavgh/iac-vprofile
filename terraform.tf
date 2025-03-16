@@ -25,4 +25,10 @@ terraform {
       version = "~> 2.36.0"
     }
   }
+
+  backend "s3" {
+    bucket = "gitops-tfstate-20250315122212806400000001"
+    key    = "terraform.tfstate"
+    region = "us-east-2"
+  }
 }
