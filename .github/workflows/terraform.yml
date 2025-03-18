@@ -1,0 +1,53 @@
+name: VProfile IAC
+on:
+  push:
+    branches:
+      - main
+      - stage
+    paths:
+      - ./**
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
+  AWS_REGION: us-east-2
+  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+
+
+jobs:
+  terraform:
+    name: "Prepare to apply terraform changes in infrastructure"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+        shell: sh
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        id: setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.1"
+
+      - name: Run Terraform init
+        id: init
+        run: terraform init -no-color -backend-config="bucket=${{ env.BUCKET_TF_STATE }}"
+
+      - name: Run Terraform fmt
+        run: terraform fmt -no-color -recursive
+
+      - name: Validate Terraform code
+        run: terraform validate -no-color
+
+      - name: Run Terraform plan
+        if: ${{ steps.setup.outcome == "success" }}
+        id: plan
+        run: terraform plan -no-color -input=false -out=planfile
