@@ -48,6 +48,11 @@ jobs:
         run: terraform validate -no-color
 
       - name: Run Terraform plan
-        if: ${{ steps.setup.outcome == "success" }}
+        if: ${{ steps.setup.conclusion == "success" }}
         id: plan
         run: terraform plan -no-color -input=false -out=planfile
+        continue-on-error: true
+
+      - name: Status of the Terraform plan command
+        if: steps.plan.outcome == "failure"
+        run: exit 1
