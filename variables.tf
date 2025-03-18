@@ -1,18 +1,11 @@
-variable "shared_config_files" {
-  description = "Paths to AWS config files"
-  type        = list(string)
-  default     = ["~/.aws/config"]
-}
-
-variable "shared_credentials_files" {
-  description = "Paths to AWS credentials files"
-  type        = list(string)
-  default     = ["~/.aws/credentials"]
-}
-
-variable "profile" {
-  description = "Describe which profile to use for provisioning AWS resources"
+variable "region" {
+  description = "AWS region where to deploy infrastracture"
   type        = string
-  default     = "default"
+  default     = "us-east-2"
 }
 
+variable "eks_cluster_name" {
+  description = "Name of the EKS cluster to deploy"
+  type = string
+  default = "vrpofile-eks"
+}
