@@ -3,9 +3,7 @@ locals {
 }
 
 provider "aws" {
-  profile                  = var.profile
-  shared_config_files      = var.shared_config_files
-  shared_credentials_files = var.shared_credentials_files
+  region = var.region
 }
 
 module "vpc" {
@@ -17,6 +15,7 @@ module "vpc" {
 module "eks" {
   source = "./modules/eks"
 
+  cluster_name = var.eks_cluster_name
   subnet_ids = module.vpc.public_subnet_ids
   vpc_id     = module.vpc.vpc_id
 
