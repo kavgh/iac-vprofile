@@ -56,6 +56,12 @@ jobs:
       - name: Status of the Terraform plan command
         if: steps.plan.outcome == 'failure'
         run: exit 1
+
+      - name: Show AWS env creds
+        run: echo ${{ env.AWS_ACCESS_KEY_ID }} ${{ env.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Show AWS secrets creds
+        run: echo ${{ secrets.AWS_ACCESS_KEY_ID }} ${{ secrets.AWS_SECRET_ACCESS_KEY}}
   
   applying:
     name: "Deploy infrastructure to AWS cloud"
