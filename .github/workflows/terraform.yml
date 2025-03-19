@@ -19,8 +19,8 @@ env:
 
 
 jobs:
-  terraform:
-    name: "Prepare to apply terraform changes in infrastructure"
+  planning:
+    name: "Check if Terraform is prepared to deploy infrastructure"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,3 +56,50 @@ jobs:
       - name: Status of the Terraform plan command
         if: steps.plan.outcome == 'failure'
         run: exit 1
+  
+  applying:
+    name: "Deploy infrastructure to AWS cloud"
+    needs: planning
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.review.state == 'approved'))
+    
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        id: setup
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.1"
+
+      - name: Run Terraform init
+        id: init
+        run: terraform init -no-color -backend-config="bucket=${{ env.BUCKET_TF_STATE }}"
+
+      - name: Run Terraform apply
+        id: apply
+        run: terraform apply -no-color -auto-approve -input false
+        continue-on-error: true
+
+      - name: Run Terraform destroy
+        id: destroy
+        if: failure()
+        run: terraform destroy -no-color -auto-approve -input false
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        id: awsconfig
+        with:
+          aws-access-key-id: ${{ AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ AWS_REGION }}
+
+      - name: Get Kube config file
+        id: kubeconf
+        if: steps.apply.outcome == 'success'
+        run: aws eks update-kubeconfig --region ${{ AWS_REGION }} --name ${{ EKS_CLUSTER_NAME }}
+
+      - name: Install Nginx Ingress controller
+        if: steps.apply.outcome == 'success' && steps.apply.kubeconf.outcome == 'success'
+        run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/aws/deploy.yaml
